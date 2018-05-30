@@ -122,7 +122,11 @@ def voc_eval(detpath,
     # extract gt objects for this class
     class_recs = {}
     npos = 0
+    #print "cachedir : {}".format(cachedir)
+    #print "imagenames " +str(imagenames)
     for imagename in imagenames:
+        #for obj in recs[imagename]:
+        #    print "Rec " +str(obj)
         R = [obj for obj in recs[imagename] if obj['name'] == classname]
         bbox = np.array([x['bbox'] for x in R])
         difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
