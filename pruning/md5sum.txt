@@ -1,0 +1,1 @@
+7474f76aa9176b74d00c54d9698b5b44  resnet101_faster_rcnn_bn_scale_merged_end2end_iter_70000.caffemodel

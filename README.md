@@ -129,12 +129,19 @@ cd $FRCN_ROOT
 The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007.
 
 ### Beyond the demo: installation for training and testing models
+
+The following steps 1-6 are used to download VOC2007 and VOC2012 datasets, and merge them
+together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset preparation.
+* `$VOCdevkit` points to where you put the VOC 2007, 2012 and the combined 0712 datasets
+* `$FRCN_ROOT` points to where this `py-faster-rcnn` located
+
 1. Download the training, validation, test data and VOCdevkit
 
 	```Shell
 	wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar
 	wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
 	wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar
+    wget http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar
 	```
 
 2. Extract all of these tars into one directory named `VOCdevkit`
@@ -143,6 +150,7 @@ The demo performs detection using a VGG16 network trained for detection on PASCA
 	tar xvf VOCtrainval_06-Nov-2007.tar
 	tar xvf VOCtest_06-Nov-2007.tar
 	tar xvf VOCdevkit_08-Jun-2007.tar
+    tar xvf VOCtrainval_11-May-2012.tar
 	```
 
 3. It should have this basic structure
@@ -151,19 +159,48 @@ The demo performs detection using a VGG16 network trained for detection on PASCA
   	$VOCdevkit/                           # development kit
   	$VOCdevkit/VOCcode/                   # VOC utility code
   	$VOCdevkit/VOC2007                    # image sets, annotations, etc.
+    $VOCdevkit/VOC2012                    # image sets, annotations, etc.
   	# ... and several other directories ...
   	```
 
-4. Create symlinks for the PASCAL VOC dataset
+4. Merge VOC 2007 data and VOC 2012 data manually
+
+    Create a new directory named `VOC0712` in VOCdevkit, put all subfolders of `VOC2007` and
+    `VOC2012` (Annotations, JPEGImages, SegmentationClass, SegmentationObject) except
+    `ImageSets` into `VOC0712`. Now the combined `Annotations` and `JPEGImages` folder should
+    contain 27088 xmls and images and the SegmentationClass and SegmentationObject should
+    contain 3545 images each.
+    For `ImageSets`, you can manually merge the text files within, or just unzip the ImageSets.zip to `VOC0712` folder.
+
+5. Create `results` folder in VOCdevkit for VOC0712: `mkdir -p VOCdevkit/results/VOC0712/Main`
+
+6. Create symlinks for the PASCAL VOC dataset
 
 	```Shell
     cd $FRCN_ROOT/data
-    ln -s $VOCdevkit VOCdevkit2007
+    ln -s $VOCdevkit VOCdevkit0712
     ```
     Using symlinks is a good idea because you will likely want to share the same PASCAL dataset installation between multiple projects.
-5. [Optional] follow similar steps to get PASCAL VOC 2010 and 2012
-6. [Optional] If you want to use COCO, please see some notes under `data/README.md`
-7. Follow the next sections to download pre-trained ImageNet models
+
+### Faster-RCNN Pruning
+
+- Prepare the merged VOC0712 dataset successfully following above steps.
+- Please check the following packages are installed: cython, python-opencv, easydict, python-tk.
+- Build the Cython modules
+    ```Shell
+    cd $FRCN_ROOT/lib
+    make clean # clean previous built modules, if you don't want to remove, please don't this command
+    make
+    ```
+- Make sure that your Synopsys Caffe is already built and install, and PYTHONPATH is set correctly.
+- Set `PYTHONPATH` to `$FRCNN_ROOT/lib:$PYTHONPATH`
+- cd to `$FRCN_ROOT/pruning` folder, download the faster-rcnn-resnet without ohem pretrained model from [faster-rcnn-resenet](https://github.com/Eniac-Xie/faster-rcnn-resnet#testing)
+- You can check the md5sum of the caffemodel we used for testing in the pruning folder.
+- Pruning the faster-rcnn model with an accuracy drop tolerance of 0.01: `evprune --model_path . --faster_rcnn_path ../ --config_file prune.cfg --accuracy_tolerance 0.01 --output_path drop0.01`
+- Notice:
+  + When you changed the train or val list, you need to manually remove the cached data in `$VOCdevkit/annotations_cache` and `$FRCN_ROOT/data/cache`
+  + If you enter to an error, please also check the `<prune_output>/default_accuracy_log.txt` file, sometimes it will contains error message dumped by faster-rcnn tool itself.
+  + Test is done using TiTan XP GPU with 12G RAM, pruning cost about 50 hours, it can achieve compression factor of 1.43, Mean AP of 0.7867, which original Mean AP is 0.7871.
 
 ### Download pre-trained ImageNet models
 
