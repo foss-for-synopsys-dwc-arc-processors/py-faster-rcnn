@@ -170,7 +170,7 @@ together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset prepar
     `ImageSets` into `VOC0712`. Now the combined `Annotations` and `JPEGImages` folder should
     contain 27088 xmls and images and the SegmentationClass and SegmentationObject should
     contain 3545 images each.
-    For `ImageSets`, you can manually merge the text files within, or just unzip the ImageSets.zip to `VOC0712` folder.
+    For `ImageSets`, you can manually merge the text files within, or just unzip the `ImageSets.zip` to `VOC0712` folder.
 
 5. Create `results` folder in VOCdevkit for VOC0712: `mkdir -p VOCdevkit/results/VOC0712/Main`
 
@@ -184,15 +184,15 @@ together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset prepar
 
 ### Faster-RCNN Pruning
 
-- Prepare the merged VOC0712 dataset successfully following above steps.
-- Please check the following packages are installed: cython, python-opencv, easydict, python-tk.
+- Prepare the merged VOC0712 dataset successfully by following steps above.
+- Please check the following packages are installed: `cython, python-opencv, easydict, python-tk`.
 - Build the Cython modules
     ```Shell
     cd $FRCN_ROOT/lib
     make clean # clean previous built modules, if you don't want to remove, please don't this command
     make
     ```
-- Make sure that your Synopsys Caffe is already built and install, and PYTHONPATH is set correctly.
+- Make sure that your Synopsys Caffe is already built and install, and `PYTHONPATH` is set correctly.
 - Set `PYTHONPATH` to `$FRCNN_ROOT/lib:$PYTHONPATH`
 - cd to `$FRCN_ROOT/pruning` folder, download the faster-rcnn-resnet without ohem pretrained model from [faster-rcnn-resenet](https://github.com/Eniac-Xie/faster-rcnn-resnet#testing)
 - You can check the md5sum of the caffemodel we used for testing in the pruning folder.
