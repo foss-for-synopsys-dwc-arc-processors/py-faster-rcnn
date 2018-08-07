@@ -194,7 +194,7 @@ together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset prepar
     ```
 - Make sure that your Synopsys Caffe is already built and install, and `PYTHONPATH` is set correctly.
 - Set `PYTHONPATH` to `$FRCNN_ROOT/lib:$PYTHONPATH`
-- cd to `$FRCN_ROOT/pruning` folder, download the faster-rcnn-resnet without ohem pretrained model from [faster-rcnn-resenet](https://github.com/Eniac-Xie/faster-rcnn-resnet#testing)
+- cd to `$FRCN_ROOT/pruning` folder, download the faster-rcnn-resnet without ohem pretrained model from [faster-rcnn-resnet](https://github.com/Eniac-Xie/faster-rcnn-resnet#testing)
 - You can check the md5sum of the caffemodel we used for testing in the pruning folder.
 - Pruning the faster-rcnn model with an accuracy drop tolerance of 0.01: `evprune --model_path . --faster_rcnn_path ../ --config_file prune.cfg --accuracy_tolerance 0.01 --output_path drop0.01`
 - Notice:
