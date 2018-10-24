@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 
 import os
+import shutil
 from datasets.imdb import imdb
 import datasets.ds_utils as ds_utils
 import xml.etree.ElementTree as ET
@@ -243,8 +244,8 @@ class pascal_voc(imdb):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
-            print 'Writing {} VOC results file'.format(cls)
             filename = self._get_voc_results_file_template().format(cls)
+            print 'Writing {} VOC results file {}'.format(cls, filename)
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
                     dets = all_boxes[cls_ind][im_ind]
@@ -256,6 +257,14 @@ class pascal_voc(imdb):
                                 format(index, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
+            saveroot = os.path.join(self._devkit_path, 'eval_result')
+            if os.path.exists(saveroot) == False:
+                os.mkdir(saveroot)
+            saved_file = os.path.join(saveroot, "{}.txt".format(cls))
+            if os.path.exists(saved_file):
+                os.remove(saved_file)
+            print("Backup {} to {}".format(filename,  saved_file))
+            shutil.copy(filename, saved_file)
 
     def _do_python_eval(self, output_dir = 'output'):
         annopath = os.path.join(
