@@ -39,16 +39,24 @@ def _get_image_blob(im):
 
     processed_ims = []
     im_scale_factors = []
+    desired_height = 600
+    desired_width = 1000
 
-    for target_size in cfg.TEST.SCALES:
-        im_scale = float(target_size) / float(im_size_min)
-        # Prevent the biggest axis from being more than MAX_SIZE
-        if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
-            im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
-        im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
-                        interpolation=cv2.INTER_LINEAR)
-        im_scale_factors.append(im_scale)
-        processed_ims.append(im)
+    #im = np.zeros((desired_height, desired_width, 3), np.float)
+    im_scale = min(desired_height/float(im_shape[0]), desired_width/float(im_shape[1]))
+    im_part = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
+    im = cv2.copyMakeBorder(im_part, 0, desired_height-im_part.shape[0], 0, desired_width - im_part.shape[1], cv2.BORDER_CONSTANT, value=[0,0,0])
+    im_scale_factors.append(im_scale)
+    processed_ims.append(im)
+    #for target_size in cfg.TEST.SCALES:
+    #    im_scale = float(target_size) / float(im_size_min)
+    #    # Prevent the biggest axis from being more than MAX_SIZE
+    #    if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
+    #        im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
+    #    im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
+    #                    interpolation=cv2.INTER_LINEAR)
+    #    im_scale_factors.append(im_scale)
+    #    processed_ims.append(im)
 
     # Create a blob to hold the input images
     blob = im_list_to_blob(processed_ims)
