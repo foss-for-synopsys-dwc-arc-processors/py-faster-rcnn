@@ -18,6 +18,8 @@ from fast_rcnn.nms_wrapper import nms
 import cPickle
 from utils.blob import im_list_to_blob
 import os
+import sys
+import operator
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -113,7 +115,7 @@ def _get_blobs(im, rois):
         blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
-def im_detect(net, im, boxes=None):
+def im_detect(net, im, boxes=None, img_idx=0):
     """Detect object classes in an image given object proposals.
 
     Arguments:
@@ -161,9 +163,54 @@ def im_detect(net, im, boxes=None):
         forward_kwargs['rois'] = blobs['rois'].astype(np.float32, copy=False)
     blobs_out = net.forward(**forward_kwargs)
 
+    fixed_dumpdir = "/DATA/hqfang/faster_rcnn_output12bit/"
+    #fixed_dumpdir = None
+       # score_elem_file = os.path.join(fixed_dumpdir, 'score-elem.bin')
+       # bbox_elem_file = os.path.join(fixed_dumpdir, 'bbox-elem.bin')
+       # roi_elem_file = os.path.join(fixed_dumpdir, 'roi-elem.bin')
+       # if not (os.path.exists(score_elem_file) and os.path.exists(bbox_elem_file) and os.path.exists(roi_elem_file)):
+       #     print("{} and {} and {} must exists! Please check!!".format(score_elem_file, bbox_elem_file, roi_elem_file))
+       #     sys.exit(1)
+    def parse_elem_file(elem_file):
+        elems = np.fromfile(elem_file, dtype=np.int8)
+        elem_type = elems[0]
+        elem_sz = elems[1]
+        elem_scale = np.frombuffer(elems[2:], dtype=np.float32)[0]
+        return elem_type, elem_sz, elem_scale
+    def parse_layer_dump(dumpdir, layer_name, layer_shape, idx):
+        elem_file = os.path.join(dumpdir, '%s-elem.bin'%(layer_name))
+        out_file  = os.path.join(dumpdir, '%s-%08d.bin'%(layer_name, idx))
+        if not (os.path.exists(elem_file) and os.path.exists(out_file)):
+            print("Layer {} elem file {} or out file {} doesn't exist, please check!".format(elem_file, out_file))
+            sys.exit(1)
+        elem_type, elem_sz, elem_scale = parse_elem_file(elem_file)
+        if elem_sz == 1:
+            outfixed = np.fromfile(out_file, dtype=np.int8)
+        else:
+            outfixed = np.fromfile(out_file, dtype=np.int16)
+        outfixed = outfixed / elem_scale
+        new_shape = []
+        new_size = 1
+        for shape in layer_shape:
+            new_shape.append(shape)
+            new_size = new_size * shape
+        new_shape[0] = outfixed.shape[0] / (new_size / new_shape[0])
+        if new_shape[0] != layer_shape[0]:
+            print("caffe and host-fixed shape not match, {} vs {}".format(layer_shape, new_shape))
+
+        #rpns = outfixed.shape[0] / reduce(operator.mul, layer_shape[1:])
+        #new_shape = layer_shape
+
+        #outfixed = outfixed[:reduce(operator.mul, laye)]
+        outfixed = np.reshape(outfixed, new_shape)
+        return outfixed
+
+
     if cfg.TEST.HAS_RPN:
         assert len(im_scales) == 1, "Only single-image batch implemented"
         rois = net.blobs['rois'].data.copy()
+        if fixed_dumpdir:
+            rois = parse_layer_dump(fixed_dumpdir, "roi", rois.shape, img_idx)
         # unscale back to raw image space
         boxes = rois[:, 1:5] / im_scales[0]
 
@@ -174,10 +221,14 @@ def im_detect(net, im, boxes=None):
     else:
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob']
+        if fixed_dumpdir:
+            scores = parse_layer_dump(fixed_dumpdir, "score", scores.shape, img_idx)
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred']
+        if fixed_dumpdir:
+            box_deltas = parse_layer_dump(fixed_dumpdir, "bbox", box_deltas.shape, img_idx)
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, im.shape)
     else:
@@ -249,6 +300,7 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
     if not cfg.TEST.HAS_RPN:
         roidb = imdb.roidb
 
+    #num_images = 2700
     for i in xrange(num_images):
         # filter out any ground truth boxes
         if cfg.TEST.HAS_RPN:
@@ -263,7 +315,7 @@ def test_net(net, imdb, max_per_image=100, thresh=0.05, vis=False):
 
         im = cv2.imread(imdb.image_path_at(i))
         _t['im_detect'].tic()
-        scores, boxes = im_detect(net, im, box_proposals)
+        scores, boxes = im_detect(net, im, box_proposals, i)
         _t['im_detect'].toc()
 
         _t['misc'].tic()
