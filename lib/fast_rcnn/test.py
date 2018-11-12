@@ -41,24 +41,26 @@ def _get_image_blob(im):
 
     processed_ims = []
     im_scale_factors = []
-    desired_height = 600
-    desired_width = 1000
+    if 1:
+        desired_height = 600
+        desired_width = 1000
 
-    #im = np.zeros((desired_height, desired_width, 3), np.float)
-    im_scale = min(desired_height/float(im_shape[0]), desired_width/float(im_shape[1]))
-    im_part = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
-    im = cv2.copyMakeBorder(im_part, 0, desired_height-im_part.shape[0], 0, desired_width - im_part.shape[1], cv2.BORDER_CONSTANT, value=[0,0,0])
-    im_scale_factors.append(im_scale)
-    processed_ims.append(im)
-    #for target_size in cfg.TEST.SCALES:
-    #    im_scale = float(target_size) / float(im_size_min)
-    #    # Prevent the biggest axis from being more than MAX_SIZE
-    #    if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
-    #        im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
-    #    im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
-    #                    interpolation=cv2.INTER_LINEAR)
-    #    im_scale_factors.append(im_scale)
-    #    processed_ims.append(im)
+        #im = np.zeros((desired_height, desired_width, 3), np.float)
+        im_scale = min(desired_height/float(im_shape[0]), desired_width/float(im_shape[1]))
+        im_part = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
+        im = cv2.copyMakeBorder(im_part, 0, desired_height-im_part.shape[0], 0, desired_width - im_part.shape[1], cv2.BORDER_CONSTANT, value=[0,0,0])
+        im_scale_factors.append(im_scale)
+        processed_ims.append(im)
+    else:
+        for target_size in cfg.TEST.SCALES:
+            im_scale = float(target_size) / float(im_size_min)
+            # Prevent the biggest axis from being more than MAX_SIZE
+            if np.round(im_scale * im_size_max) > cfg.TEST.MAX_SIZE:
+                im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
+            im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
+                            interpolation=cv2.INTER_LINEAR)
+            im_scale_factors.append(im_scale)
+            processed_ims.append(im)
 
     # Create a blob to hold the input images
     blob = im_list_to_blob(processed_ims)
@@ -115,6 +117,85 @@ def _get_blobs(im, rois):
         blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
+
+class evdumpparser:
+    class evmapdata:
+        def __init__(self, array):
+            self.layout_type = array[0]
+            self.element_type = array[1]
+            self.element_size = array[2]
+            self.num_maps = array[3]
+            self.width = array[4]
+            self.height = array[5]
+
+            self.scale = np.frombuffer(array[8:12], dtype=np.float32)[0]
+
+            self.bbox = np.frombuffer(array[16:32], dtype=np.int32)
+            self.bbox_alloc_count = self.bbox[0]
+            self.bbox_valid_count = self.bbox[1]
+            self.bbox_bbox_scale = self.bbox[2]
+            self.bbox_confidence_scale = self.bbox[3]
+
+            self.layer_shape = [1, self.num_maps, self.height, self.width]
+            if self.layout_type == 2:
+                self.layer_shape = [1, 1, self.bbox_alloc_count, 7]
+            pass
+
+    def __init__(self, dumpdir, layer_names=None):
+        self.dumpdir = dumpdir
+        self.layermap = {}
+        if layer_names is not None:
+            for layer_name in layer_names:
+                layermap = self.parse_mapdata(layer_name)
+                if layermap is not None:
+                    self.layermap[layer_name] = layermap
+        pass
+
+    def parse_mapdata(self, layer_name):
+        mapdata_file = os.path.join(self.dumpdir, "{}-mapdata.bin".format(layer_name))
+        if os.path.exists(mapdata_file) == False:
+            return None
+        mapdata_arr = np.fromfile(mapdata_file, dtype=np.int8)
+        if mapdata_arr.size < 48:
+            return None
+        return self.evmapdata(mapdata_arr)
+
+    def parse_layerdump(self, layer_name, idx, layer_shape=None):
+        layerdump_file = os.path.join(self.dumpdir, '%s-%08d.bin'%(layer_name, idx))
+        if os.path.exists(layerdump_file) == False:
+            return None
+        if layer_name not in self.layermap:
+            layermap = self.parse_mapdata(layer_name)
+            if layermap is not None:
+                self.layermap[layer_name] = layermap
+            else:
+                return None
+
+        layermap = self.layermap[layer_name]
+
+        new_shape = layermap.layer_shape
+        if layermap.layout_type == 2: # CNN_LAYOUT_BBOX
+            dumpfixed = np.fromfile(layerdumpfile, dtype=np.float)
+            bbox_cnt = dumpfixed.size / self.layer_shape[3]
+            new_shape = [1, 1, bbox_cnt, self.layer_shape[3]]
+        else: # CNN_LAYOUT_3DCONTIGUOUS or CNN_LAYOUT_3DFMAPS
+            if layermap.element_size == 1: # 8bit
+                dumpfixed = np.fromfile(layerdump_file, dtype=np.int8)
+            else:
+                dumpfixed = np.fromfile(layerdump_file, dtype=np.int16)
+            dumpfixed = dumpfixed / layermap.scale
+            new_shape[0] = dumpfixed.size / (new_shape[1] * new_shape[2] * new_shape[3])
+        if layer_shape is not None:
+            new_shape = []
+            new_size = 1
+            for shape in layer_shape:
+                new_shape.append(shape)
+                new_size = new_size * shape
+            new_shape[0] = dumpfixed.size / (new_size / new_shape[0])
+        # Reshape the data parsed
+        dumpfixed = np.reshape(dumpfixed, new_shape)
+        return dumpfixed
+
 def im_detect(net, im, boxes=None, img_idx=0):
     """Detect object classes in an image given object proposals.
 
@@ -163,7 +244,10 @@ def im_detect(net, im, boxes=None, img_idx=0):
         forward_kwargs['rois'] = blobs['rois'].astype(np.float32, copy=False)
     blobs_out = net.forward(**forward_kwargs)
 
-    fixed_dumpdir = "/DATA/hqfang/faster_rcnn_output12bit/"
+    #fixed_dumpdir = "/DATA/hqfang/faster_rcnn_output12bit/"
+    fixed_dumpdir = "/DATA/hqfang/faster_rcnn_vgg16_dump/12bit"
+    #fixed_dumpdir = "/DATA/hqfang/fixeddump/8bit"
+    dumpparser = evdumpparser(fixed_dumpdir)
     #fixed_dumpdir = None
        # score_elem_file = os.path.join(fixed_dumpdir, 'score-elem.bin')
        # bbox_elem_file = os.path.join(fixed_dumpdir, 'bbox-elem.bin')
@@ -181,8 +265,8 @@ def im_detect(net, im, boxes=None, img_idx=0):
         elem_file = os.path.join(dumpdir, '%s-elem.bin'%(layer_name))
         out_file  = os.path.join(dumpdir, '%s-%08d.bin'%(layer_name, idx))
         if not (os.path.exists(elem_file) and os.path.exists(out_file)):
-            print("Layer {} elem file {} or out file {} doesn't exist, please check!".format(elem_file, out_file))
-            sys.exit(1)
+            #print("elem file {} or out file {} doesn't exist, please check!".format(elem_file, out_file))
+            return None
         elem_type, elem_sz, elem_scale = parse_elem_file(elem_file)
         if elem_sz == 1:
             outfixed = np.fromfile(out_file, dtype=np.int8)
@@ -210,7 +294,13 @@ def im_detect(net, im, boxes=None, img_idx=0):
         assert len(im_scales) == 1, "Only single-image batch implemented"
         rois = net.blobs['rois'].data.copy()
         if fixed_dumpdir:
-            rois = parse_layer_dump(fixed_dumpdir, "roi", rois.shape, img_idx)
+            rois_new = parse_layer_dump(fixed_dumpdir, "roi", rois.shape, img_idx)
+            if rois_new is None:
+                rois_new = dumpparser.parse_layerdump("output__rois", img_idx, rois.shape)
+                if rois_new is None:
+                    print("Not able to find rois layer dump binary files")
+                    sys.exit(1)
+            rois = rois_new
         # unscale back to raw image space
         boxes = rois[:, 1:5] / im_scales[0]
 
@@ -222,13 +312,25 @@ def im_detect(net, im, boxes=None, img_idx=0):
         # use softmax estimated probabilities
         scores = blobs_out['cls_prob']
         if fixed_dumpdir:
-            scores = parse_layer_dump(fixed_dumpdir, "score", scores.shape, img_idx)
+            scores_new = parse_layer_dump(fixed_dumpdir, "score", scores.shape, img_idx)
+            if scores_new is None:
+                scores_new = dumpparser.parse_layerdump("cls_prob", img_idx, scores.shape)
+                if scores_new is None:
+                    print("Not able to find cls_prob layer dump binary files")
+                    sys.exit(1)
+            scores = scores_new
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred']
         if fixed_dumpdir:
-            box_deltas = parse_layer_dump(fixed_dumpdir, "bbox", box_deltas.shape, img_idx)
+            box_deltas_new = parse_layer_dump(fixed_dumpdir, "bbox", box_deltas.shape, img_idx)
+            if box_deltas_new is None:
+                box_deltas_new = dumpparser.parse_layerdump("bbox_pred", img_idx, box_deltas.shape)
+                if box_deltas_new is None:
+                    print("Not able to find bbox_pred layer dump binary files")
+                    sys.exit(1)
+            box_deltas = box_deltas_new
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, im.shape)
     else:
