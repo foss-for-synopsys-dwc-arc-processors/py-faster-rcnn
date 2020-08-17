@@ -6,7 +6,8 @@
 
 import xml.etree.ElementTree as ET
 import os
-import cPickle
+#import cPickle
+import _pickle as cPickle
 import numpy as np
 
 def parse_rec(filename):
@@ -108,10 +109,10 @@ def voc_eval(detpath,
         for i, imagename in enumerate(imagenames):
             recs[imagename] = parse_rec(annopath.format(imagename))
             if i % 100 == 0:
-                print 'Reading annotation for {:d}/{:d}'.format(
-                    i + 1, len(imagenames))
+                print('Reading annotation for {:d}/{:d}'.format(
+                    i + 1, len(imagenames)))
         # save
-        print 'Saving cached annotations to {:s}'.format(cachefile)
+        print('Saving cached annotations to {:s}'.format(cachefile))
         with open(cachefile, 'w') as f:
             cPickle.dump(recs, f)
     else:
@@ -122,11 +123,11 @@ def voc_eval(detpath,
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    #print "cachedir : {}".format(cachedir)
-    #print "imagenames " +str(imagenames)
+    #print("cachedir : {}".format(cachedir))
+    #print("imagenames " +str(imagenames))
     for imagename in imagenames:
         #for obj in recs[imagename]:
-        #    print "Rec " +str(obj)
+        #    print("Rec " +str(obj))
         R = [obj for obj in recs[imagename] if obj['name'] == classname]
         bbox = np.array([x['bbox'] for x in R])
         difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
