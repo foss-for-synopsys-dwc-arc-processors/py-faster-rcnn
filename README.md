@@ -48,7 +48,7 @@ If you find Faster R-CNN useful in your research, please consider citing:
 5. [Beyond the demo: training and testing](#beyond-the-demo-installation-for-training-and-testing-models)
 6. [Usage](#usage)
 
-### Requirements: software
+### Requirements: Software
 
 **NOTE:** If you are having issues compiling and you are using a recent version of CUDA/cuDNN, please consult [this issue](https://github.com/rbgirshick/py-faster-rcnn/issues/509?_pjax=%23js-repo-pjax-container#issuecomment-284133868) for a workaround
 
@@ -66,13 +66,13 @@ If you find Faster R-CNN useful in your research, please consider citing:
 2. Python packages you need to install additionally: `cython`, `python-opencv`, `easydict`  
 3. [Optional] MATLAB is required for **official** PASCAL VOC evaluation only. The code now includes unofficial Python evaluation code.  
 
-### Requirements: hardware
+### Requirements: Hardware
 
 1. For training smaller networks (ZF, VGG_CNN_M_1024) a good GPU (e.g., Titan, K20, K40, ...) with at least 3G of memory suffices
 2. For training Fast R-CNN with VGG16, you'll need a K40 (~11G of memory)
 3. For training the end-to-end version of Faster R-CNN with VGG16, 3G of GPU memory is sufficient (using CUDNN)
 
-### Installation (sufficient for the demo)
+### Installation (Sufficient for the demo)
 
 1. Clone the Faster R-CNN repository
   ```Shell
@@ -127,7 +127,7 @@ cd $FRCN_ROOT
 ```
 The demo performs detection using a VGG16 network trained for detection on PASCAL VOC 2007.
 
-### Beyond the demo: installation for training and testing models
+### Beyond the demo: Installation for training and testing models
 
 The following steps 1-6 are used to download VOC2007 and VOC2012 datasets, and merge them
 together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset preparation.
@@ -182,8 +182,8 @@ together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset prepar
     Using symlinks is a good idea because you will likely want to share the same PASCAL dataset installation between multiple projects.
 
 
-### Updated cocoAPI
-The scripts under `lib/pycocotools` are updated according to [cocoapi](https://github.com/cocodataset/cocoapi)
+### Update cocoAPI
+The scripts under `lib/pycocotools` could be updated according to [cocoapi](https://github.com/cocodataset/cocoapi)
 
 ### Faster-RCNN Pruning
 
