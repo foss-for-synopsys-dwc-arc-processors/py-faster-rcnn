@@ -308,7 +308,7 @@ class coco(imdb):
             coco_eval.eval['precision'][ind_lo:(ind_hi + 1), :, :, 0, 2]
         ap_default = np.mean(precision[precision > -1])
         print('~~~~ Mean and per-category AP @ IoU=[{:.2f},{:.2f}] '
-               '~~~~').format(IoU_lo_thresh, IoU_hi_thresh)
+               '~~~~'.format(IoU_lo_thresh, IoU_hi_thresh))
         print('{:.1f}'.format(100 * ap_default))
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
