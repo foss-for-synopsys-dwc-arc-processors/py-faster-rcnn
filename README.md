@@ -62,9 +62,8 @@ If you find Faster R-CNN useful in your research, please consider citing:
   # Unrelatedly, it's also recommended that you use CUDNN
   USE_CUDNN := 1
   ```
-
-  You can download my [Makefile.config](https://dl.dropboxusercontent.com/s/6joa55k64xo2h68/Makefile.config?dl=0) for reference.  
-2. Python packages you might not have: `cython`, `python-opencv`, `easydict`  
+  You can download my [Makefile.config](https://dl.dropboxusercontent.com/s/6joa55k64xo2h68/Makefile.config?dl=0) for reference.    
+2. Python packages you need to install additionally: `cython`, `python-opencv`, `easydict`  
 3. [Optional] MATLAB is required for **official** PASCAL VOC evaluation only. The code now includes unofficial Python evaluation code.  
 
 ### Requirements: hardware
@@ -181,6 +180,10 @@ together to create VOC0712 dataset mainly for Faster-RCNN pruning dataset prepar
     ln -s $VOCdevkit VOCdevkit0712
     ```
     Using symlinks is a good idea because you will likely want to share the same PASCAL dataset installation between multiple projects.
+
+
+### Updated cocoAPI
+The scripts under `lib/pycocotools` are updated according to [cocoapi](https://github.com/cocodataset/cocoapi)
 
 ### Faster-RCNN Pruning
 
