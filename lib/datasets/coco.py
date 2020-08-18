@@ -367,7 +367,7 @@ class coco(imdb):
             results.extend(self._coco_results_one_category(all_boxes[cls_ind],
                                                            coco_cat_id))
         print('Writing results json to {}'.format(res_file))
-        with open(res_file, 'w') as fid:
+        with open(res_file, 'wb') as fid:
             json.dump(results, fid)
 
     def evaluate_detections(self, all_boxes, output_dir):

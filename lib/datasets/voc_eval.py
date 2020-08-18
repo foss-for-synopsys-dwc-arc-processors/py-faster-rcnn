@@ -99,9 +99,9 @@ def voc_eval(detpath,
         os.mkdir(cachedir)
     cachefile = os.path.join(cachedir, 'annots.pkl')
     # read list of images
-    with open(imagesetfile, 'r') as f:
+    with open(imagesetfile, 'rb') as f:
         lines = f.readlines()
-    imagenames = [x.strip() for x in lines]
+    imagenames = [bytes.decode(x).strip() for x in lines]
 
     if not os.path.isfile(cachefile):
         # load annots
@@ -139,10 +139,10 @@ def voc_eval(detpath,
 
     # read dets
     detfile = detpath.format(classname)
-    with open(detfile, 'r') as f:
+    with open(detfile, 'rb') as f:
         lines = f.readlines()
 
-    splitlines = [x.strip().split(' ') for x in lines]
+    splitlines = [bytes.decode(x).strip().split(' ') for x in lines]
     image_ids = [x[0] for x in splitlines]
     confidence = np.array([float(x[1]) for x in splitlines])
     BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
