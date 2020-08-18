@@ -107,7 +107,7 @@ class pascal_voc(imdb):
         gt_roidb = [self._load_pascal_annotation(index)
                     for index in self.image_index]
         with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(gt_roidb, fid, -1)
         print('wrote gt roidb to {}'.format(cache_file))
 
         return gt_roidb
@@ -135,7 +135,7 @@ class pascal_voc(imdb):
         else:
             roidb = self._load_selective_search_roidb(None)
         with open(cache_file, 'wb') as fid:
-            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(roidb, fid, -1)
         print('wrote ss roidb to {}'.format(cache_file))
 
         return roidb

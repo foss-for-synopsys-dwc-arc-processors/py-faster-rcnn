@@ -155,7 +155,7 @@ class coco(imdb):
         else:
             roidb = self._load_proposals(method, None)
         with open(cache_file, 'wb') as fid:
-            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(roidb, fid, -1)
         print('wrote {:s} roidb to {:s}'.format(method, cache_file))
         return roidb
 
@@ -222,7 +222,7 @@ class coco(imdb):
                     for index in self._image_index]
 
         with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(gt_roidb, fid, -1)
         print('wrote gt roidb to {}'.format(cache_file))
         return gt_roidb
 
@@ -331,7 +331,7 @@ class coco(imdb):
         self._print_detection_eval_metrics(coco_eval)
         eval_file = osp.join(output_dir, 'detection_results.pkl')
         with open(eval_file, 'wb') as fid:
-            cPickle.dump(coco_eval, fid, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(coco_eval, fid, -1)
         print('Wrote COCO eval results to: {}'.format(eval_file))
 
     def _coco_results_one_category(self, boxes, cat_id):
